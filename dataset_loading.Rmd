@@ -16,7 +16,7 @@ library(tidyverse)
 
 ```{r}
 happiness.df <- read_csv(file="datasets/world-happiness/happiness.csv")
-colnames(happiness.df) <- make.names(colnames(happiness.df))
+colnames(happiness.df) <- make.names(colnames(happiness.df) %>%  tolower)
 ```
 
 We can get the train-test split using createDataPartition from caret:
