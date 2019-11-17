@@ -16,6 +16,7 @@ library(tidyverse)
 
 ```{r}
 happiness.df <- read_csv(file="datasets/world-happiness/happiness.csv")
+happiness.df <- happiness.df %>% select_if(is_double) %>% select(-c(x1,happiness.rank))
 colnames(happiness.df) <- make.names(colnames(happiness.df) %>%  tolower)
 ```
 
