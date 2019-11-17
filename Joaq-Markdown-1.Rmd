@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r lib}
 library(tidyverse)
+library(BART)
 ```
 
 
