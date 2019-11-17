@@ -1,0 +1,60 @@
+---
+title: An R Markdown document converted from "20191118_JOAQ_BART.ipynb"
+output: html_document
+---
+
+# SETUP
+
+## Loading Library
+
+```{r}
+#install.packages("BART")
+install.packages("doParallel")
+library(BART)
+library(caret)
+library(tidyverse)
+```
+
+```{r}
+#Include the parallel library. If the next line does not work, run install.packages(“parallel”) first
+library(parallel)
+library(doParallel)
+
+# Use the detectCores() function to find the number of cores in system
+n_cores <- detectCores()
+print(n_cores)
+cl <- makePSOCKcluster(4)
+```
+
+## Loading Data
+
+```{r}
+happiness.df <- read_csv(file="datasets/world-happiness/happiness.csv")
+colnames(happiness.df) <- make.names(colnames(happiness.df))
+```
+
+We can get the train-test split using createDataPartition from caret:
+
+```{r}
+happiness.df %>% head(5)
+```
+
+```{r}
+set.seed(42)
+trainIndex <- createDataPartition(happiness.df$`Happiness Score`, p = 0.9, list = FALSE)
+happy.train <- happiness.df[ trainIndex,]
+happy.test  <- happiness.df[-trainIndex,]
+```
+
+## bartMachine
+
+```{r}
+registerDoParallel(cl)
+```
+
+```{r}
+happy.bm <- train("Happiness Score" ~ ., data = happy.train, 
+                 method = "bartMachine", 
+                 verbose = TRUE)
+```
+

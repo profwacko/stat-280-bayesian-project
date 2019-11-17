@@ -1,0 +1,26 @@
+---
+title: An R Markdown document converted from "20191117_EDA.ipynb"
+output: html_document
+---
+
+# Setup for Packages in R
+
+```{r}
+#install.packages("BART")
+library(BART)
+library(caret)
+library(tidyverse)
+```
+
+```{r}
+happiness.df <- read_csv(file="datasets/world-happiness/happiness.csv")
+```
+
+```{r}
+happiness.df
+```
+
+```{r}
+happiness.df %>% featurePlot(happiness.df["Happiness Score"])
+```
+
