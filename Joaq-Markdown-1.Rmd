@@ -2,12 +2,13 @@
 title: "280 Project"
 author: "Almirante, Casuyon, Esteves"
 date: "27 Nov 2019"
-output: pdf
+output: html_document
 ---
 
 
 ```{r lib}
 library(tidyverse)
 library(knitr)
+library(BART)
 ```
 
