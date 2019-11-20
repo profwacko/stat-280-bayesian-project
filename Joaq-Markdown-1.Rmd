@@ -6,7 +6,7 @@ output: html_document
 ---
 
 
-```{r lib, warnings = FALSE}
+```{r lib, warning = FALSE}
 library(tidyverse)
 library(knitr)
 library(BART)
@@ -36,7 +36,8 @@ X2015 <- X2015 %>%
       "Freedom",
       "Trust (Government Corruption)",
       "Generosity",
-      "Dystopia Residual"))
+      "Dystopia Residual")) %>% 
+  mutate(year = 2015)
 
 X2016 <- X2016 %>% 
   select(-`Lower Confidence Interval`,
@@ -52,7 +53,8 @@ X2016 <- X2016 %>%
       "Freedom",
       "Trust (Government Corruption)",
       "Generosity",
-      "Dystopia Residual"))
+      "Dystopia Residual")) %>% 
+  mutate(year = 2016)
 
 X2017 <- X2017 %>% 
   select(-`Whisker.high`,
@@ -72,17 +74,25 @@ X2017 <- X2017 %>%
       "Freedom",
       "Trust (Government Corruption)",
       "Generosity",
-      "Dystopia Residual"))
+      "Dystopia Residual")) %>% 
+  mutate(year = 2017)
+
+nyears <- data_frame(Country = c(X2015$Country,X2016$Country,X2017$Country)) %>% 
+  group_by(Country) %>% 
+  summarise(nyears = n()) %>%
+  arrange(Country)
 
 happiness <- bind_rows(X2015,
                        X2016,
-                       X2017) 
+                       X2017) %>% 
+  left_join(nyears)
 
 happiness %>% write.csv("datasets/world-happiness/happiness.csv")
 
 ```
 
-```{r}
+```{r eda}
+
 DataExplorer::create_report(happiness)
 
 ```
