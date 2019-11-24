@@ -17,26 +17,26 @@ X2015 <- read_csv("datasets/world-happiness/2015.csv")
 X2016 <- read_csv("datasets/world-happiness/2016.csv")
 X2017 <- read_csv("datasets/world-happiness/2017.csv")
 
-bind_cols(
-  x5 = c(names(X2015),""),
-  x6 = names(X2016),
-  x7 = c(names(X2017),"")
-  ) %>% write.csv("test.csv")
+# bind_cols(
+#   x5 = c(names(X2015),""),
+#   x6 = names(X2016),
+#   x7 = c(names(X2017),"")
+#   ) %>% write.csv("test.csv")
 
 X2015 <- X2015 %>% 
   select(-`Standard Error`) %>%
   data.frame() %>% 
   magrittr::set_colnames(c("Country",
       "Region",
-      "HappinessRank",
-      "HappinessScore",
-      "Economy",
+      "Happiness Rank",
+      "Happiness Score",
+      "Economy (GDP per Capita)",
       "Family",
-      "Health",
+      "Health (Life Expectancy)",
       "Freedom",
-      "Trust",
+      "Trust (Government Corruption)",
       "Generosity",
-      "DystopiaResidual")) %>% 
+      "Dystopia Residual")) %>% 
   mutate(year = 2015)
 
 X2016 <- X2016 %>% 
@@ -45,15 +45,15 @@ X2016 <- X2016 %>%
   data.frame()  %>% 
   magrittr::set_colnames(c("Country",
       "Region",
-      "HappinessRank",
-      "HappinessScore",
-      "Economy",
+      "Happiness Rank",
+      "Happiness Score",
+      "Economy (GDP per Capita)",
       "Family",
-      "Health",
+      "Health (Life Expectancy)",
       "Freedom",
-      "Trust",
+      "Trust (Government Corruption)",
       "Generosity",
-      "DystopiaResidual")) %>% 
+      "Dystopia Residual")) %>% 
   mutate(year = 2016)
 
 X2017 <- X2017 %>% 
@@ -66,15 +66,15 @@ X2017 <- X2017 %>%
       everything())  %>% 
   magrittr::set_colnames(c("Country",
       "Region",
-      "HappinessRank",
-      "HappinessScore",
-      "Economy",
+      "Happiness Rank",
+      "Happiness Score",
+      "Economy (GDP per Capita)",
       "Family",
-      "Health",
+      "Health (Life Expectancy)",
       "Freedom",
-      "Trust",
+      "Trust (Government Corruption)",
       "Generosity",
-      "DystopiaResidual")) %>% 
+      "Dystopia Residual")) %>% 
   mutate(year = 2017)
 
 nyears <- data_frame(Country = c(X2015$Country,X2016$Country,X2017$Country)) %>% 
@@ -89,14 +89,106 @@ happiness <- bind_rows(X2015,
 
 happiness %>% write.csv("datasets/world-happiness/happiness.csv")
 
+
+# colnames(happiness) <- happiness %>% 
+#   colnames() %>%
+#   tolower() %>% 
+#   make.names()
 ```
 
-```{r eda}
+```{r read_transform_file, cache = TRUE}
+happiness.df <- read_csv(file="datasets/world-happiness/happiness.csv")
+colnames(happiness.df) <- make.names(colnames(happiness.df) %>%  tolower)
+happiness.df <- happiness.df %>% select(-c(x1,country,happiness.rank,year,nyears,dystopia.residual,region))
 
-create_report(happiness,
-              y = "HappinessScore",
-              report_title = )
+colnames(happiness)
+colnames(happiness.df)
+```
+
+
+```{r eda, cache = TRUE, eval = FALSE}
+
+# create_report(happiness.df,
+#               y = "happiness.score",
+#               report_title = "Happiness Score EDA",
+#               output_file = "happinessEDA.html")
 
 ```
 
+```{r loadings, cache = TRUE}
+library(caret)
+
+
+glimpse(happiness.df)
+happiness.df <- happiness.df %>% 
+  # mutate(region = factor(region)) %>% 
+  select(happiness.score,everything())
+
+set.seed(42)
+trainIndex <- createDataPartition(happiness.df$happiness.score, p = 0.9, list = FALSE)
+happy.train <- happiness.df[ trainIndex,]
+happy.test  <- happiness.df[-trainIndex,]
+
+
+
+# trnctrl <- trainControl(method = "repeatedcv",
+#                         number = 10,
+#                         repeats = 10)
+
+```
+
+```{r coreMod}
+#Include the parallel library. If the next line does not work, run install.packages(“parallel”) first
+library(parallel)
+# install.packages("doParallel")
+library(doParallel)
+
+# Use the detectCores() function to find the number of cores in system
+n_cores <- detectCores()
+print(n_cores)
+cl <- makePSOCKcluster(4)
+```
+
+```{r classical}
+x <- happy.train[, -1] %>% as.data.frame()
+y <- happy.train[, 1] %>% unlist()
+
+train_model <- function(method, tuneGrid=NULL, ...) {
+  model <- train(x = x,
+                 y = y,
+                 trControl = trainControl (method = "repeatedcv", 
+                                           number = 10, 
+                                           repeats = 10, 
+                                           savePredictions = T, 
+                                           allowParallel = T, 
+                                           returnResamp = 'final'),
+                 ...,
+                 method = method
+                 # ,
+                 # tuneGrid = tuneGrid
+                 )
+  return(model)
+}
+
+gridsearch_for_lambda =  data.frame (alpha = 0,
+                                      lambda = c (2^c(-15:15), 3^c(-15:15)))
+
+# train different models
+models <- list()
+models$glm <- train_model(method = 'glm', model = F)
+models$glmnet <- train_model(method = 'glmnet',
+                    tuneLength = 10)
+models$xgboost <- train_model(method = 'xgbLinear',
+                              tuneLength = 10)
+models$rf <- train_model(method = 'rf',
+                    tuneLength = 10)
+
+models$glm
+models$glmnet
+models$xgboost
+models$rf
+# summary(models$glm)
+
+models$rf
+```
 
