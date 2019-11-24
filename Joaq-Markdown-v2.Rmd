@@ -129,8 +129,6 @@ trainIndex <- createDataPartition(happiness.df$happiness.score, p = 0.9, list = 
 happy.train <- happiness.df[ trainIndex,]
 happy.test  <- happiness.df[-trainIndex,]
 
-
-
 # trnctrl <- trainControl(method = "repeatedcv",
 #                         number = 10,
 #                         repeats = 10)
