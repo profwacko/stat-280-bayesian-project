@@ -1,8 +1,6 @@
 #library(devtools)
 #install_github("theodds/SoftBART")
 
-library(SoftBart)
-
 ## Functions used to generate fake data
 set.seed(42)
 f_fried <- function(x) 10 * sin(pi * x[,1] * x[,2]) + 20 * (x[,3] - 0.5)^2 + 
@@ -26,15 +24,18 @@ gen_data <- function(n_train, n_test, func, P, sigma, a, b) {
 
 
 ## Simulate datasets
-
+set.seed(42)
 #all 5 predictors are important
 sim_data_usual <- gen_data(250, 100, f_fried, 5, 1, 0, 1)
 
+set.seed(42)
 #all 500 predictors do have a relationship to y, and p > n
 sim_data_high_dim <- gen_data(250, 100, high_dimensional_func, 500, 1, 0, 1)
 
+set.seed(42)
 # only 5 predictors are important out of 20
 sim_data_sparse <- gen_data(250, 100, f_fried, 20, 1, 0, 1)
 
+set.seed(42)
 # only 5 predictors are important out of 500, and p > n
 sim_data_high_dim_sparse <- gen_data(250, 100, f_fried, 500, 1, 0, 1)
