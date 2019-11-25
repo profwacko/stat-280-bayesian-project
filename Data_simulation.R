@@ -10,8 +10,8 @@ f_fried <- function(x) 10 * sin(pi * x[,1] * x[,2]) + 20 * (x[,3] - 0.5)^2 +
 
 our_function <- function(x) sin(x[,1])*exp(x[,2])*10 + cos(2*x[,3]) - 20*x[,4]^2 + 3*x[,5]^3 - 15*x[,6]^(1/3) 
 
-high_dimensional_func <- function(x) 10 * sin(pi * apply(x[,1:200], 1, prod)) + 20 * (apply(x[,201:300],1,sum) - 5)^2 + 
-  10 * apply(x[,301:400],1,sum) + 5 * apply(x[,401:500],1,sum)
+high_dimensional_func <- function(x) 10 * sin(pi * apply(x[,1:100], 1, prod)) + 20 * (apply(x[,101:150],1,sum) - 5)^2 + 
+  10 * apply(x[,151:200],1,sum) + 5 * apply(x[,201:250],1,sum)
 
 gen_data <- function(n_train, n_test, func, P, sigma, a, b) {
   X <- matrix(runif(n_train * P, a, b), nrow = n_train)
@@ -34,7 +34,9 @@ sim_data_usual <- gen_data(250, 100, f_fried, 5, 1, 0, 1)
 sim_data_high_dim <- gen_data(250, 100, high_dimensional_func, 500, 1, 0, 1)
 
 # only 5 predictors are important out of 20
-sim_data_sparse <- gen_data(250, 100, f_fried, 20, 1, 0, 1)
+sim_data_sparse <- gen_data(250, 100, f_fried, 50, 1, 0, 1)
 
 # only 5 predictors are important out of 500, and p > n
 sim_data_high_dim_sparse <- gen_data(250, 100, f_fried, 500, 1, 0, 1)
+
+summary(softbart_fit_1)
