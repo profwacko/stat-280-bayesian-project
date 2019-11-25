@@ -52,31 +52,37 @@ dat <- list(sim_data_usual,
             sim_data_sparse,
             sim_data_high_dim_sparse)
 
+# Creating a Caret Model function
 caret_mod <- function(d){
-  x <- dat[[d]]$X %>% magrittr::set_colnames(paste("X", 1:ncol(dat[[d]]$X), sep = ""))
+  # Extracting the predictor & response variables from the list with simulated data for training
+  x <- dat[[d]]$X %>% magrittr::set_colnames(paste("X", 1000 + (1:ncol(dat[[d]]$X)), sep = ""))
   y <- dat[[d]]$Y
-  
   
   start_time <- Sys.time()
   
+  # caret::train, importance is only applicable to rf to obtain the varImp
   models <- list(train(x = x, y = y, method = 'glm'),
                  train(x = x, y = y, method = 'glmnet'),
                  train(x = x, y = y, method = 'xgbTree'),
                  train(x = x, y = y, method = 'rf', importance = T))
   
-  varimp <- sapply(1:4,
+  # Getting the varImp from the models created
+  varimp <- lapply(1:4,
                    function(x){
                     temp <- varImp(models[[x]])$importance
                     return(temp[order(row.names(temp)), ])
                     }
-                   ) %>% magrittr::set_colnames(c("glm", "glmnet", "xgbTree", "rf"))
+                   )
   
-  x_test <- dat[[d]]$X_test %>% magrittr::set_colnames(paste("X", 1:ncol(dat[[d]]$X_test), sep = ""))
+  # Extracting the predictor & response variables from the list with simulated data for testing  
+  x_test <- dat[[d]]$X_test %>% magrittr::set_colnames(paste("X", 1000 + (1:ncol(dat[[d]]$X_test)), sep = ""))
   y_test <- dat[[d]]$Y_test
   
+  # Creating containers for predictions, residuals and rmse
   predicted <- residuals <- data.frame(V1 = rep(NA,nrow(dat[[d]]$X_test)))
   RMSE <- vector()
   
+  # Obtaining RMSE
   for(i in 1:4) {
     predicted[,i] = predict(models[[i]], x_test)
     residuals[,i] = y_test - predicted[,i]
@@ -87,3 +93,96 @@ caret_mod <- function(d){
   }
 
 classical <- lapply(1:4,caret_mod)
+
+
+# classical[[1]][[1]]
+# classical[[1]][[2]][[1]] %>% names()
+#  temp <- classical[[1]][[2]][[1]]
+#  names(temp) <- paste("X", seq_along(temp), sep = "")
+#  names(temp[order(-temp)])[1:10]
+# classical[[1]][[4]]                                              
+#  
+#   
+# classical[[2]][[1]]
+# classical[[2]][[2]]
+# classical[[2]][[4]]
+# 
+# 
+# classical[[3]][[1]]
+# classical[[3]][[2]]
+# classical[[3]][[4]]
+# 
+# classical[[4]][[1]]
+# classical[[4]][[2]]
+# classical[[4]][[4]]
+
+
+# rmse
+bind_cols(
+  "Method" = c("GLM", "Elastic_Net", "XGBoost", "Random_Forest"),
+  "Usual" = classical[[1]][[1]],
+  "High_Dimensional" = classical[[2]][[1]],
+  "Sparse" = classical[[3]][[1]],
+  "HD_&_Sparse" = classical[[4]][[1]]
+)
+
+# time
+classical[[1]][[4]]
+classical[[2]][[4]]
+classical[[3]][[4]]
+classical[[4]][[4]]
+
+# varimp
+imp_var <- imp_val <- array(dim = c(4,4,10))
+
+for(i in 1:4){
+  for(j in 1:4){
+    temp <- vector()
+    temp <- classical[[i]][[2]][[j]]
+    names(temp) <- paste("X", seq_along(temp), sep = "")
+    imp_var[i,j,] <- temp[order(-temp)][1:10] %>% names()
+    imp_val[i,j,] <- temp[order(-temp)][1:10]
+  }
+}
+
+imp_var[1,,]
+imp_var[2,,]
+imp_var[3,,]
+imp_var[4,,]
+
+# library(gridExtra)
+
+grid.arrange(
+  ggplot(varImp(classical[[1]][[3]][[1]], scale = F)) + ggtitle("GLM"),
+  ggplot(varImp(classical[[1]][[3]][[2]], scale = F)) + ggtitle("Elastic Net"),
+  ggplot(varImp(classical[[1]][[3]][[3]], scale = F)) + ggtitle("XGBoost"),
+  ggplot(varImp(classical[[1]][[3]][[4]], scale = F)) + ggtitle("Random Forest"), 
+  top = "Variable Importance for simulated usual data across different classical models"
+)
+
+grid.arrange(
+  ggplot(varImp(classical[[2]][[3]][[1]], scale = F), top = 10) + ggtitle("GLM"),
+  ggplot(varImp(classical[[2]][[3]][[2]], scale = F), top = 10) + ggtitle("Elastic Net"),
+  ggplot(varImp(classical[[2]][[3]][[3]], scale = F), top = 10) + ggtitle("XGBoost"),
+  ggplot(varImp(classical[[2]][[3]][[4]], scale = F), top = 10) + ggtitle("Random Forest"), 
+  top = "Variable Importance for simulated high dimensional data across different classical models"
+)
+
+
+grid.arrange(
+  ggplot(varImp(classical[[3]][[3]][[1]], scale = F), top = 10) + ggtitle("GLM"),
+  ggplot(varImp(classical[[3]][[3]][[2]], scale = F), top = 10) + ggtitle("Elastic Net"),
+  ggplot(varImp(classical[[3]][[3]][[3]], scale = F), top = 10) + ggtitle("XGBoost"),
+  ggplot(varImp(classical[[3]][[3]][[4]], scale = F), top = 10) + ggtitle("Random Forest"), 
+  top = "Variable Importance for simulated sparse data across different classical models"
+)
+
+grid.arrange(
+  ggplot(varImp(classical[[4]][[3]][[1]], scale = F), top = 10) + ggtitle("GLM"),
+  ggplot(varImp(classical[[4]][[3]][[2]], scale = F), top = 10) + ggtitle("Elastic Net"),
+  ggplot(varImp(classical[[4]][[3]][[3]], scale = F), top = 10) + ggtitle("XGBoost"),
+  ggplot(varImp(classical[[4]][[3]][[4]], scale = F), top = 10) + ggtitle("Random Forest"), 
+  top = "Variable Importance for simulated high dimensional & sparse data across different classical models"
+)
+
+# imp_val[4,,]
