@@ -33,7 +33,7 @@ set.seed(42)
 sim_data_high_dim <- gen_data(250, 100, high_dimensional_func, 500, 1, 0, 1)
 
 set.seed(42)
-# only 5 predictors are important out of 20
+# only 5 predictors are important out of 50
 sim_data_sparse <- gen_data(250, 100, f_fried, 50, 1, 0, 1)
 
 set.seed(42)
