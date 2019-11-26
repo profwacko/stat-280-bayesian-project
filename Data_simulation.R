@@ -26,7 +26,7 @@ gen_data <- function(n_train, n_test, func, P, sigma, a, b) {
 ## Simulate datasets
 set.seed(42)
 #all 5 predictors are important
-sim_data_usual <- gen_data(250, 100, f_fried, 5, 1, 0, 1)
+sim_data_usual <- gen_data(250, 100, f_fried, 10, 1, 0, 1)
 
 set.seed(42)
 #all 500 predictors do have a relationship to y, and p > n
