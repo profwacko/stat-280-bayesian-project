@@ -161,10 +161,10 @@ grid.arrange(
 )
 
 grid.arrange(
-  ggplot(varImp(classical[[2]][[3]][[1]], scale = F), top = 10) + ggtitle("GLM"),
-  ggplot(varImp(classical[[2]][[3]][[2]], scale = F), top = 10) + ggtitle("Elastic Net"),
-  ggplot(varImp(classical[[2]][[3]][[3]], scale = F), top = 10) + ggtitle("XGBoost"),
-  ggplot(varImp(classical[[2]][[3]][[4]], scale = F), top = 10) + ggtitle("Random Forest"), 
+  ggplot(varImp(classical[[2]][[3]][[1]], scale = F), top = 30) + ggtitle("GLM"),
+  ggplot(varImp(classical[[2]][[3]][[2]], scale = F), top = 30) + ggtitle("Elastic Net"),
+  ggplot(varImp(classical[[2]][[3]][[3]], scale = F), top = 30) + ggtitle("XGBoost"),
+  ggplot(varImp(classical[[2]][[3]][[4]], scale = F), top = 30) + ggtitle("Random Forest"), 
   top = "Variable Importance for simulated high dimensional data across different classical models"
 )
 

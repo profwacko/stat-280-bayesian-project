@@ -77,3 +77,5 @@ rmse <- function(x,y) sqrt(mean((x-y)^2))
 
 rmse(softbart_fit_2$y_hat_test_mean, sim_data_2$mu_test)
 rmse(softbart_fit_2$y_hat_train_mean, sim_data_2$mu)
+
+

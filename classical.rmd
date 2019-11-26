@@ -1,0 +1,195 @@
+---
+title: "Stat 280 Project"
+author: "Almirante | Casuyon | Esteves"
+date: "27 November 2019"
+output: pdf_document
+---
+
+```{r lib, cache = TRUE}
+library(caret)
+library(tidyverse)
+library(gridExtra)
+```
+
+```{r dat, cache = TRUE}
+## Functions used to generate fake data
+set.seed(42)
+f_fried <- function(x) 10 * sin(pi * x[,1] * x[,2]) + 20 * (x[,3] - 0.5)^2 + 
+  10 * x[,4] + 5 * x[,5]
+
+our_function <- function(x) sin(x[,1])*exp(x[,2])*10 + cos(2*x[,3]) - 20*x[,4]^2 + 3*x[,5]^3 - 15*x[,6]^(1/3) 
+
+high_dimensional_func <- function(x) 10 * sin(pi * apply(x[,1:100], 1, prod)) + 20 * (apply(x[,101:150],1,sum) - 5)^2 + 
+  10 * apply(x[,151:200],1,sum) + 5 * apply(x[,201:250],1,sum)
+
+gen_data <- function(n_train, n_test, func, P, sigma, a, b) {
+  X <- matrix(runif(n_train * P, a, b), nrow = n_train)
+  mu <- func(X)
+  X_test <- matrix(runif(n_test * P, a, b), nrow = n_test)
+  mu_test <- func(X_test)
+  Y <- mu + sigma * rnorm(n_train)
+  Y_test <- mu_test + sigma * rnorm(n_test)
+  
+  return(list(X = X, Y = Y, mu = mu, X_test = X_test, Y_test = Y_test, mu_test = mu_test))
+}
+
+
+## Simulate datasets
+set.seed(42)
+#all 5 predictors are important
+sim_data_usual <- gen_data(250, 100, f_fried, 10, 1, 0, 1)
+
+set.seed(42)
+#all 500 predictors do have a relationship to y, and p > n
+sim_data_high_dim <- gen_data(250, 100, high_dimensional_func, 500, 1, 0, 1)
+
+set.seed(42)
+# only 5 predictors are important out of 20
+sim_data_sparse <- gen_data(250, 100, f_fried, 50, 1, 0, 1)
+
+set.seed(42)
+# only 5 predictors are important out of 500, and p > n
+sim_data_high_dim_sparse <- gen_data(250, 100, f_fried, 500, 1, 0, 1)
+
+```
+
+```{r dat2, cache = TRUE}
+dat <- list(sim_data_usual,
+            sim_data_high_dim,
+            sim_data_sparse,
+            sim_data_high_dim_sparse)
+```
+
+```{r modfun, cache = TRUE, warning=FALSE}
+# Creating a Caret Model function
+caret_mod <- function(d){
+  # Extracting the predictor & response variables from the list with simulated data for training
+  x <- dat[[d]]$X %>% magrittr::set_colnames(paste("X", (1:ncol(dat[[d]]$X)), sep = ""))
+  y <- dat[[d]]$Y
+  
+  start_time <- Sys.time()
+  
+  # caret::train, importance is only applicable to rf to obtain the varImp
+  models <- list(train(x = x, y = y, method = 'glm'),
+                 train(x = x, y = y, method = 'glmnet'),
+                 train(x = x, y = y, method = 'xgbTree'),
+                 train(x = x, y = y, method = 'rf', importance = T))
+  
+  # Extracting the predictor & response variables from the list with simulated data for testing  
+  x_test <- dat[[d]]$X_test %>% magrittr::set_colnames(paste("X", (1:ncol(dat[[d]]$X_test)), sep = ""))
+  y_test <- dat[[d]]$Y_test
+  
+  # Creating containers for predictions, residuals and rmse
+  predicted <- residuals <- data.frame(V1 = rep(NA,nrow(dat[[d]]$X_test)))
+  RMSE <- vector()
+  
+  # Obtaining RMSE
+  for(i in 1:4) {
+    predicted[, i] = predict(models[[i]], x_test)
+    residuals[, i] = y_test - predicted[, i]
+    RMSE[i] = sqrt(mean(residuals[, i]^2))
+  }
+  Sys.time() - start_time
+  return(list(RMSE,models,Sys.time() - start_time))
+  }
+```
+
+```{r mod, cache = TRUE, warning=FALSE}
+classical <- lapply(1:4,caret_mod)
+```
+
+```{r rmse}
+# rmse
+bind_cols(
+  "Method" = c("GLM", "Elastic_Net", "XGBoost", "Random_Forest"),
+  "Usual" = classical[[1]][[1]],
+  "High_Dimensional" = classical[[2]][[1]],
+  "Sparse" = classical[[3]][[1]],
+  "HD_&_Sparse" = classical[[4]][[1]]
+)
+```
+
+```{r varImp, cache = TRUE, warning=FALSE}
+grid.arrange(
+  ggplot(varImp(classical[[1]][[2]][[1]], scale = F)) + ggtitle("GLM"),
+  ggplot(varImp(classical[[1]][[2]][[2]], scale = F)) + ggtitle("Elastic Net"),
+  ggplot(varImp(classical[[1]][[2]][[3]], scale = F)) + ggtitle("XGBoost"),
+  ggplot(varImp(classical[[1]][[2]][[4]], scale = F)) + ggtitle("Random Forest"), 
+  top = "Variable Importance for simulated usual data across different classical models"
+)
+
+grid.arrange(
+  ggplot(varImp(classical[[2]][[2]][[1]], scale = F), top = 300) + ggtitle("GLM"),
+  ggplot(varImp(classical[[2]][[2]][[2]], scale = F), top = 300) + ggtitle("Elastic Net"),
+  ggplot(varImp(classical[[2]][[2]][[3]], scale = F), top = 300) + ggtitle("XGBoost"),
+  ggplot(varImp(classical[[2]][[2]][[4]], scale = F), top = 300) + ggtitle("Random Forest"), 
+  top = "Variable Importance for simulated high dimensional data across different classical models"
+)
+
+
+grid.arrange(
+  ggplot(varImp(classical[[3]][[2]][[1]], scale = F), top = 5) + ggtitle("GLM"),
+  ggplot(varImp(classical[[3]][[2]][[2]], scale = F), top = 5) + ggtitle("Elastic Net"),
+  ggplot(varImp(classical[[3]][[2]][[3]], scale = F), top = 5) + ggtitle("XGBoost"),
+  ggplot(varImp(classical[[3]][[2]][[4]], scale = F), top = 5) + ggtitle("Random Forest"), 
+  top = "Variable Importance for simulated sparse data across different classical models"
+)
+
+grid.arrange(
+  ggplot(varImp(classical[[4]][[2]][[1]], scale = F), top = 5) + ggtitle("GLM"),
+  ggplot(varImp(classical[[4]][[2]][[2]], scale = F), top = 5) + ggtitle("Elastic Net"),
+  ggplot(varImp(classical[[4]][[2]][[3]], scale = F), top = 5) + ggtitle("XGBoost"),
+  ggplot(varImp(classical[[4]][[2]][[4]], scale = F), top = 5) + ggtitle("Random Forest"), 
+  top = "Variable Importance for simulated high dimensional & sparse data across different classical models"
+)
+```
+
+
+```{r}
+varImp(classical[[2]][[2]][[1]], scale = F)$importance %>%
+  mutate(var = row.names(.)) %>%
+  arrange(desc(Overall)) %>%
+  mutate(rank = 1:n()) %>% 
+  filter(rank <= 250) %>% 
+  inner_join(data.frame(var = paste("X", (1:250), sep = "")), by = "var") %>% 
+  nrow()
+
+varImp(classical[[2]][[2]][[2]], scale = F)$importance %>%
+  mutate(var = row.names(.)) %>%
+  arrange(desc(Overall)) %>%
+  mutate(rank = 1:n()) %>% 
+  filter(rank <= 250) %>% 
+  inner_join(data.frame(var = paste("X", (1:250), sep = "")), by = "var") %>% 
+  nrow()
+
+
+varImp(classical[[2]][[2]][[3]], scale = F)$importance %>%
+  mutate(var = row.names(.)) %>%
+  arrange(desc(Overall)) %>%
+  mutate(rank = 1:n()) %>% 
+  filter(rank <= 250) %>% 
+  inner_join(data.frame(var = paste("X", (1:250), sep = "")), by = "var") %>% 
+  nrow()
+
+varImp(classical[[2]][[2]][[4]], scale = F)$importance %>%
+  mutate(var = row.names(.)) %>%
+  arrange(desc(Overall)) %>%
+  mutate(rank = 1:n()) %>% 
+  filter(rank <= 250) %>% 
+  inner_join(data.frame(var = paste("X", (1:250), sep = "")), by = "var") %>% 
+  nrow()
+
+```
+
+
+
+```{r duration}
+# time
+classical[[1]][[3]]
+classical[[2]][[3]]
+classical[[3]][[3]]
+classical[[4]][[3]]
+```
+
+
+
