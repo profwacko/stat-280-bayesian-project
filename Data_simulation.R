@@ -40,4 +40,10 @@ set.seed(42)
 # only 5 predictors are important out of 500, and p > n
 sim_data_high_dim_sparse <- gen_data(250, 100, f_fried, 500, 1, 0, 1)
 
-summary(softbart_fit_1)
+
+set.seed(42)
+# only 5 predictors are important out of 2000. This case is and p >> n,
+#which should be included based on the discussion during the presentation.
+sim_data_ultra_high_dim_sparse <- gen_data(250, 100, f_fried, 2000, 1, 0, 1)
+
+
